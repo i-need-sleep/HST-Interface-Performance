@@ -1,54 +1,31 @@
-/* Dial /////////////////////////////////////*/
-#dial_svg{
-    width: 400px;
-    height: 400px;
-}
-
-.outer_path{
-    stroke: black;
-    fill: white;
-}
-
-.outer_text{
-    stroke: black;
-    fill: black;
-    stroke-width: 0;
-    font-size: 15px;
-    user-select: none;
-    dominant-baseline: middle;
-    text-anchor: middle;
-}
-
-.outer_path_mouseover{
-    fill: #ff9797;
-}
-
-.outer_path_active{
-    fill: red;
-}
-
-.center_path{
-    stroke: black;
-    fill: white;
-}
-
-.center_text{
-    stroke: black;
-    fill: black;
-    stroke-width: 0;
-    font-size: 25px;
-    user-select: none;
-    dominant-baseline: middle;
-    text-anchor: middle;
-}
-
-/* Table ///////////////////////////////////////////////////////////////////////////////////////////////// */
-.prog_table{
-    width: 1900px !important;
+/* Global / Layout /////////////////////////////////////////////////////////////////////////////*/
+#app{
+    transform-origin: top left;
+    -webkit-transform: scale(0.65);
+    
     position: relative;
     left: -100px;
 }
 
+#controls{
+    position: relative;
+    left:700px;
+}
+/* Barlines //////////////////////////////////////////////////////////////////////////////// */
+.barline_svg{
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 1600px;
+    height: 5000px;
+    pointer-events: none;
+}
+
+.barline{
+    fill: black;
+    opacity: 0.1;
+}
+/* Table /////////////////////////////////////////////////////////////////////////////////// */
 .prog_head{
     text-align: center;
     vertical-align: text-top;
@@ -74,9 +51,17 @@
 }
 
 .time_cell_active{
+    /* animation-name: time_cell_active_ani;
+    animation-duration: 2s; */
     background-color: #80b8f5 !important
 }
-
+  
+/* @keyframes time_cell_active_ani {
+    0% {background-color: rgb(233, 236, 239);}
+    2% {background-color: #80b8f5;}
+    50% {background-color: #80b8f5;}
+    70% {background-color: rgb(233, 236, 239);}
+} */
 .table_cell{
     -webkit-user-select: none;         
     -moz-user-select: none; 
@@ -92,84 +77,167 @@
     animation-duration: 1s;
 }
 
-/* Visualiser ////////////////////////////////////////////////////////////////////////////*/
-
-
-/* Barlines //////////////////////////////////////////////////////////////////////////////// */
-.barline_svg{
-    position: absolute;
-    top: 0px;
-    left: 0px;
-    width: 1600px;
-    height: 1000px;
-    pointer-events: none;
-}
-
-.barline{
-    fill: black;
-    opacity: 0.1;
-}
-
 /* Piano Roll Overlay //////////////////////////////////////////////////////////////////// */
-canvas{
-    display: block;
-}
-
 .svg{
     position: relative;
-    top: -280px;
+    top: -240px;
     width: 1600px;
-    height: 280px;
+    height: 240px;
+}
+
+#swapped_svg{
+    position: relative;
+    top: -480px;
 }
 
 .up{
-    position:relative;
-    top: -280px
-}
-
-/* Bpm slider ////////////////////////////////////////////////////////////////////////////////// */
-#bpm_slider{
     position: relative;
-    top: 15px;
-    -webkit-appearance: none;
-    width: 300px;
-    height: 10px;
-    background: #d3d3d3;
-    outline: none;
-    opacity: 0.7;
-    -webkit-transition: .2s;
-    transition: opacity .2s;
+    top: -240px;
 }
 
-#bpm_slider:hover {
-    opacity: 1;
+.up_higher{
+    position: relative;
+    top: -480px;
+}
+
+.padded_up{
+    position: relative;
+    top: -220px;
+}
+
+.padded_up_time{
+    position: relative;
+    top: -240px;
+}
+
+.padded_up_higher{
+    position: relative;
+    top: -460px;
+}
+
+.right{
+    position: relative;
+    left: 100px;
+}
+/* Graph /////////////////////////////////////////////////////////////////////////////// */
+.net{
+    height:100%;
+    margin:0
+}
+
+.node{
+    stroke:rgba(18,120,98,.7);
+    stroke-width:3px;
+    -webkit-transition:fill .5s ease;
+    transition:fill .5s ease;
+    fill:#dcfaf3}
+    
+.node.selected{
+    stroke: #347dff;
+    stroke-width:5px
+}
+.dial{
+    stroke-width:1%
+}
+.node.dial:hover{
+    stroke:rgba(18,120,98,.7);
+    stroke-width:1%;
+}
+
+.node.selected:hover{
+    stroke:#be385d;
+}
+
+.node.highlighted{
+    stroke: #347dff;
+}
+
+.node-label{
+    font-size: large;
+}
+
+.link{
+    stroke:rgba(18,120,98,.7);
+    stroke-width: 3px
+}
+
+.link,.node{
+    stroke-linecap:round
+}
+
+.link:hover,.node:hover{
+    stroke:#be385d;
+    stroke-width:5px
+}
+
+.link.dashed{
+    stroke-width:5px
+}
+
+.link.selected{
+    stroke:rgba(202,164,85,.6)
+}
+
+.curve{
+    fill:none
+}
+
+.link-label,.node-label{
+    fill:#127862
+}
+
+.link-label{
+    -webkit-transform:translateY(-.5em);
+    transform:translateY(-.5em);
+    text-anchor:middle
+}
+
+#m-end path, #m-start{
+    fill: rgba(18, 120, 98, 0.8);
   }
-  
-#bpm_slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 25px;
-    height: 25px;
-    background: #80b8f5;
-    cursor: pointer;
-    stroke-width: 0px;
-}
-  
-#bpm_slider::-moz-range-thumb {
-    width: 25px;
-    height: 25px;
-    background: #80b8f5;
-    cursor: pointer;
-    stroke-width: 0px;
+#m-end-highlight path, #m-start{
+    fill: #347dff
 }
 
-#slider_container{
-    height: 50px;
+/* Graph: root selector ///////////////////////////////////////////////////*/
+#root_select{
+    position: relative;
+    top: -550px;
 }
 
+.root_select_cell{
+    text-align: center;
+    -webkit-user-select: none;         
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    user-select: none; 
 
-/* Global ////////////////////////////////////////////////////////////////////////////////*/
-#app{
-    transform-origin: top left;
-    -webkit-transform: scale(0.65);
+}
+
+.root_cell_selected{
+    background-color: #b8daff;
+}
+
+/* Graph: chroma/bass selector //////////////////////////////////////////// */
+#chroma_select{
+    position: relative;
+    top: -550px;
+    left: -100px;
+}
+
+.chroma_select_cell{
+    text-align: center;
+    -webkit-user-select: none;         
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    user-select: none; 
+
+}
+
+.chroma_cell_selected{
+    background-color: #b8daff;
+}
+
+.bass_cell_selected{
+    background-color: #fd80a3;
 }
