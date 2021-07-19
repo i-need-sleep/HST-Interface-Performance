@@ -27,7 +27,7 @@
           <ul>
             <li>left click: select a major triad</li>
             <li>right click: select a minor triad</li>
-            <li>middle click: select a dominant 7th chord</li>
+            <li>middle click or (shift + left click): select a dominant 7th chord</li>
             <li>alt + left/right click: select a major/minor 7th chord</li>
           </ul>
           <li>Keyboard</li>
@@ -310,7 +310,10 @@ export default {
                 }
               }
 
-              this.altered_vis = new mm.PianoRollCanvasVisualizer({notes: this.list_to_noteseq(this.notedic[0]["0M3,0M3"]), totalTime:16}, document.getElementById('altered_canvas'), this.cfg)
+              // Fetch a placeholder notesequence
+              // this.altered_vis = new mm.PianoRollCanvasVisualizer({notes: this.list_to_noteseq(this.notedic[0]["0M3,0M3"]), totalTime:16}, document.getElementById('altered_canvas'), this.cfg)
+              
+              this.altered_vis = new mm.PianoRollCanvasVisualizer({notes: [{pitch: 30, start:0, end:8}], totalTime:16}, document.getElementById('altered_canvas'), this.cfg)
               this.update_overlay()
 
               this.player_reset()

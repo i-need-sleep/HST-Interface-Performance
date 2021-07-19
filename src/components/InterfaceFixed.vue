@@ -66,9 +66,17 @@ export default {
 
   methods: {
     root_on_click(root_idx, event){
+      if (event.ctrlKey){
+        this.root_on_rightclick(root_idx, event)
+        return
+      }
       this.current_chord_root = root_idx
       this.current_chord_type = "M"
       if (event.altKey){
+        this.current_chord_interval = 7
+      }
+      else if (event.shiftKey && event.movementX != undefined){
+        this.current_chord_type = "D"
         this.current_chord_interval = 7
       }
       else{
@@ -102,16 +110,27 @@ export default {
           let idx = ['!','@','#','$','%','^','&','*','(',')','_','+'].indexOf(key)
           this.root_on_click(idx, event)
       }
+      else if (['⁄','€','‹','›','ﬁ','ﬂ','‡','°','·','—','±'].includes(key)){
+          event.preventDefault()
+          let idx = ['⁄','€','‹','›','ﬁ','ﬂ','‡','°','·','—','±'].indexOf(key)
+          this.root_on_click(idx, event)
+      }
       // Minor
       else if (['1','2','3','4','5','6','7','8','9','0','-','='].includes(key) && event.ctrlKey){
           event.preventDefault()
           let idx = ['1','2','3','4','5','6','7','8','9','0','-','='].indexOf(key)
           this.root_on_rightclick(idx, event)
       }
+      // Dominant
       else if (['1','2','3','4','5','6','7','8','9','0','-','='].includes(key) && event.altKey){
           event.preventDefault()
           let idx = ['1','2','3','4','5','6','7','8','9','0','-','='].indexOf(key)
           this.root_on_middleclick(idx, event)
+      }
+      else if (['¡','™','£','¢','∞','§','¶','•','ª','º','–','≠'].includes(key)){
+          event.preventDefault()
+          let idx = ['¡','™','£','¢','∞','§','¶','•','ª','º','–','≠'].indexOf(key)
+          this.root_on_click(idx, event)
       }
     }
   },

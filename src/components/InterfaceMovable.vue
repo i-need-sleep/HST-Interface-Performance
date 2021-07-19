@@ -87,6 +87,10 @@ export default {
             .attr("id", 'outer_path'+i)
             .attr("class", "outer_path")
             .on("click", function(){This.outer_on_click(i)})
+            .on("contextmenu", function(e){
+              e.preventDefault()
+              This.outer_on_click(i)
+            })
             .on("mouseover", function(){
                 d3.select("#outer_path"+i).classed("outer_path_mouseover",true)
             })
@@ -101,6 +105,10 @@ export default {
         .attr("id", "outer_text"+i)
         .text(outer_text[i])
         .on("click", function(){This.outer_on_click(i)})
+        .on("contextmenu", function(e){
+          e.preventDefault()
+          This.outer_on_click(i)
+        })
         .on("mouseover", function(){
             d3.select("#outer_path"+i).classed("outer_path_mouseover",true)
         })
@@ -184,6 +192,7 @@ export default {
           this.current_chord_type = "M"
         }
         else if (this.ctrl){
+          console.log("CTRL")
           this.current_chord_type = "m"
         }
       }
@@ -239,6 +248,14 @@ export default {
       if (['!','@','#','$','%','^','&'].includes(key)){
         event.preventDefault()
         this.outer_on_click(['!','@','#','$','%','^','&'].indexOf(key))
+      }
+      if (['¡','™','£','¢','∞','§','¶'].includes(key)){
+        event.preventDefault()
+        this.outer_on_click(['¡','™','£','¢','∞','§','¶'].indexOf(key))
+      }
+      if (['⁄','€','‹','›','ﬁ','ﬂ','‡'].includes(key)){
+        event.preventDefault()
+        this.outer_on_click(['⁄','€','‹','›','ﬁ','ﬂ','‡'].indexOf(key))
       }
     },
     keyup_functions(event){
