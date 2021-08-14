@@ -1,16 +1,35 @@
 <template>
+<div>
 
 <!-- Nav Bar -->
-<nav class="navbar navbar-expand-sm bg-light">
-  <div class="collapse navbar-collapse" id="navbarNav">
-    <ul class="navbar-nav mr-auto">
-      <li class="nav-item">
-        <button class="btn" value="placeholder" v-on:click="get_data">New Sample</button><br> 
-      </li>
-    </ul>
+<nav class="navbar navbar-expand-sm bg-light navbar-hover">
+  <div class="collapse navbar-collapse">
+    <ul class="navbar-nav mr-auto">   
+          <li class="nav-item dropdown">
+              <button class="dropdown-toggle btn" id="browse_samples" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Browse Samples
+              </button>
+              <ul class="dropdown-menu">
+                <li id="resample" v-on:click="get_data">Random Phrase</li>
+                  <li v-for="song in Object.keys(this.songData)" v-bind:key="song">
+                    <a class="dropdown-item dropdown-toggle">Song {{song}} {{this.songData[song]['key']}}</a>
+                      <ul class="dropdown-menu">
+                        <div v-for="segment in Object.keys(this.songData[song])" v-bind:key="segment">
+                          <div v-if="segment != 'key'">
+                            <li v-on:click="get_data"><a class="dropdown-item phraseSelect" 
+                              v-bind:data-song="song"
+                              v-bind:data-segment="segment">
+                              Segment {{segment}} {{this.songData[song][segment]}}</a></li>
+                          </div>
+                        </div>
+                      </ul>
+                  </li>
+              </ul>
+          </li>
+      </ul>
     <ul class="navbar-nav">
       <li class="nav-item">
-        <button class="btn" disabled>Song ID:{{ this.songID }}</button><br> 
+        <button class="btn" disabled>Phrase ID: {{this.songID.slice(0,3)}}: {{this.songname}} {{this.songID.slice(4)}} | {{this.songkey}}</button><br> 
         <!-- <button class="btn" v-on:click="test">test</button><br>  -->
       </li>
       <li class="nav-item">
@@ -75,7 +94,7 @@
     <tr>
       <th class="prog_head table_cell"></th>
       <div>
-        <th class="time_cell" v-for="i in 16" v-bind:key="i" v-bind:id="'time'+i"> {{ (i+3-(i-1)%4)/4 + "." + ((i-1)%4+1)}} </th>
+        <th class="time_cell" v-for="i in 16" v-bind:key="i" v-bind:id="'time'+(i-1)"> {{ (i+3-(i-1)%4)/4 + "." + ((i-1)%4+1)}} </th>
         <th class="time_cell"></th><th class="time_cell"></th>
       </div>
     </tr>
@@ -83,17 +102,20 @@
   </table> 
 
   <midi-visualizer type="piano-roll" class="right" id="original_vis" v-bind:noteSequence="this.original_noteseq" v-bind:config="this.cfg"></midi-visualizer>
+  <div class="up">
+  <midi-visualizer type="piano-roll" class="right" id="original_vis_overlay" v-bind:noteSequence="this.original_noteseq_overlay" v-bind:config="this.cfg_mel"></midi-visualizer>
   <svg class="original_svg svg right" height="0px"></svg>
-
+  
+  
   <div class="up">
 
   <!-- Original Progression -->
   <table id="original_prog" class="table table-fixed table-striped prog_table">
     <tbody>
     <tr>
-        <th id=play_prog_original class="prog_head">Original</th>
+        <th id=play_prog_original class="prog_head" v-on:click="play_prog_original">Original</th>
         <div>
-        <td v-for="i in 16" v-bind:key="i" v-bind:id="'original_prog'+(i-1)" class="table_cell" style="font-weight:normal;"> {{ original_chd_str[i-1] }} </td>
+        <td v-for="i in 16" v-bind:key="i" v-bind:id="'original_prog'+(i-1)" class="table_cell" style="font-weight:normal;" v-on:click="play_chord('original', i-1)" > {{ original_chd_str[i-1] }} </td>
         <th></th><th></th>
         </div>
     </tr>
@@ -107,7 +129,7 @@
     <tr>
         <div>
           <th class = "prog_head table_cell"></th>
-          <th class="time_cell" v-for="i in 16" v-bind:key="i" v-bind:id="'time_altered'+i"> {{ (i+3-(i-1)%4)/4 + "." + ((i-1)%4+1)}} </th>
+          <th class="time_cell" v-for="i in 16" v-bind:key="i" v-bind:id="'time_altered'+(i-1)"> {{ (i+3-(i-1)%4)/4 + "." + ((i-1)%4+1)}} </th>
           <th class="time_cell"></th><th class="time_cell"></th>
         </div>
     </tr>
@@ -123,8 +145,8 @@
     <tbody>
       <tr>
         <div>
-        <th id=play_prog_original class="prog_head">Altered</th>
-        <td v-for="i in 16" v-bind:key="i" v-bind:id="'altered'+(i-1)" class="table_cell" style="font-weight:normal;">{{altered_chd_str[i-1]}}</td>
+        <th id=play_prog_original class="prog_head" v-on:click="play_prog_altered">Altered</th>
+        <td v-for="i in 16" v-bind:key="i" v-bind:id="'altered'+(i-1)" class="table_cell" style="font-weight:normal;" v-on:click="play_chord('altered',i-1)">{{altered_chd_str[i-1]}}</td>
         </div>
         <th></th>
     </tr>
@@ -178,6 +200,7 @@
 </div>
 </div>
 </div>
+</div>
 
 <!-- Barlines -->
 <svg id=original_barline class="barline_svg"></svg><br>
@@ -186,6 +209,21 @@
 <!-- Player -->
 <midi-player v-bind:noteSequence="this.original_noteseq" sound-font visualizer="#original_vis" id="original_player"></midi-player>
 
+<!-- Mel/Acc Toggle -->
+<div id="melacc_toggle">
+<div class="input-group-prepend">
+  <div class="input-group-text" style="width:160px">
+    <input type="checkbox" id="root_overlay" v-bind:checked="mel" v-on:click="this.mel_on_click()"> <span> &nbsp; Melody</span>
+  </div>
+</div>
+<div class="input-group-prepend">
+  <div class="input-group-text" style="width:160px">
+    <input type="checkbox" id="chord_overlay" v-bind:checked="acc" v-on:click="this.acc_on_click()"> <span> &nbsp; Accompaniment</span>
+  </div>
+</div>
+</div>
+
+</div>
 </template>
 
 <script>
@@ -207,16 +245,34 @@ export default {
   data: function(){
     return{
       // Constants (not really)
-      BACKEND_PATH: "",
+      BACKEND_PATH: "", //"http://127.0.0.1:5000"
       STEP_SIZE: 4,
       scales_major: ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'],
+      // Chord playback
+      prog_step_duration: 0.5,
+      octave_center: 48,
 
       // Song data (original)
       songID: "000",
+      songname: '',
+      songkey: '',
+      songData: {},
+
       original_noteseq: 0,
+      original_noteseq_mixed: 0,
+      original_noteseq_mel: 0,
+      original_noteseq_acc: 0,
+      original_noteseq_overlay: {notes:[{pitch:30, start:0, end:16}], totalTime: 16},
+      empty_noteseq: {notes:[{pitch:30, start:0, end:16}], totalTime: 16},
+
       original_chd_str: 0,
       original_chd_mat: 0,
+
       notedic: 0,
+      notedic_mixed: 0,
+      notedic_mel: 0,
+      notedic_acc: 0,
+
       sustain: [],
 
       // Song data (altered)
@@ -230,6 +286,9 @@ export default {
       loaded: false,
       input_type: "fixed",
       key: "C",
+      
+      mel: false,
+      acc: true,
 
       // Interfacing (inside)
       t: 0,
@@ -247,6 +306,14 @@ export default {
         minPitch: 20,
         maxPitch: 90,
         noteSpacing: 1
+      },
+      cfg_mel: {
+        noteHeight: 4,
+        pixelsPerTimeStep: 100,
+        minPitch: 20,
+        maxPitch: 90,
+        noteSpacing: 1,
+        noteRGB: "255,0,0"
       },
 
       // Overlays
@@ -276,20 +343,115 @@ export default {
       return notes_out
     },
 
+    chords_to_noteseq(chords, relative=true){ 
+      
+      let mod_chords = []
+      for (let i=0; i<chords.length; i++){
+        let chord = chords[i]
+        let chroma = []
+        for (let j=0; j<12; j++){
+          if (chord[12+j] == 1){
+            chroma.push(j)
+          }
+        }
+        if (chord.slice(0,13).indexOf(1) == -1){
+          break
+        }
+        if (relative){
+          mod_chords.push([chord.slice(0,13).indexOf(1),chroma,0])
+        }
+        else{
+          mod_chords.push([chord.slice(0,13).indexOf(1),chroma,chord.slice(24,36).indexOf(1)])
+        }
+      }
+      chords = mod_chords
+      
+
+      let prog_notes = [];
+
+      if (chords.length > 0){
+        let cur_chord = chords[0];
+        let cur_dur = this.prog_step_duration;
+        
+        for (let i=1; i<chords.length; i++){
+            if (JSON.stringify(chords[i])==JSON.stringify(cur_chord)){
+                cur_dur += this.prog_step_duration;
+            }
+            else {
+                let root = parseInt(cur_chord[0]);
+                let chroma = cur_chord[1];
+                let bass = parseInt(cur_chord[2]);
+                for (let j=0; j<chroma.length; j++){
+                  if (relative){
+                    prog_notes.push({pitch: parseInt(chroma[j])+root+this.octave_center, startTime: this.prog_step_duration*i-cur_dur, endTime: this.prog_step_duration*i});
+                  }
+                  else{
+                    prog_notes.push({pitch: parseInt(chroma[j])+this.octave_center, startTime: this.prog_step_duration*i-cur_dur, endTime: this.prog_step_duration*i});
+                  }
+                }
+                prog_notes.push({pitch:bass+root+this.octave_center-12, startTime: this.prog_step_duration*i-cur_dur, endTime: this.prog_step_duration*i});
+                cur_chord = chords[i];
+                cur_dur = this.prog_step_duration;
+            }
+        }
+        let root = parseInt(cur_chord[0]);
+        let chroma = cur_chord[1];
+        let bass = parseInt(cur_chord[2]);
+        for (let j=0; j<chroma.length; j++){
+          if (relative){
+            prog_notes.push({pitch: parseInt(chroma[j])+root+this.octave_center, startTime: this.prog_step_duration*chords.length-cur_dur, endTime: this.prog_step_duration*chords.length});
+          }
+          else{
+            prog_notes.push({pitch: parseInt(chroma[j])+this.octave_center, startTime: this.prog_step_duration*chords.length-cur_dur, endTime: this.prog_step_duration*chords.length});
+          }
+        }
+        prog_notes.push({pitch:bass+root+this.octave_center-12, startTime: this.prog_step_duration*chords.length-cur_dur, endTime: this.prog_step_duration*chords.length});
+
+        return {notes: prog_notes, totalTime: this.prog_step_duration*chords.length};
+      }
+    },
+
     // Fetch data from the backend
-    get_data(){
-      axios.get(this.BACKEND_PATH + '/get_data?song=' + this.songID)
+    get_songdata(){
+      axios.get(this.BACKEND_PATH + '/get_songdata')
+        .then(response => {
+              let data = response.data
+              if (! data.songData){
+                data = JSON.parse(response.data)
+              }
+              this.songData = data.songData
+        })
+    },
+    
+    get_data(id="000"){
+      if(typeof(id) != "string"){
+        if (id.target.dataset.song != undefined){
+          id = id.target.dataset.song.slice(0,3) + "_" + id.target.dataset.segment
+        }
+        else{
+          id = "000"
+        }
+      }
+      axios.get(this.BACKEND_PATH + '/get_data?song=' + id)
         .then(response => {
               let data = response.data
               if (! data.songID){
                 data = JSON.parse(response.data)
               }
               this.songID = data.songID
-              this.original_noteseq = data.original_noteseq
+              this.original_noteseq_mixed = data.original_noteseq_mixed
+              this.original_noteseq_mel = data.original_noteseq_mel
+              this.original_noteseq_acc = data.original_noteseq_acc
               this.original_chd_str = data.original_chd_str
               this.original_chd_mat = data.original_chd_mat
-              this.notedic = data.notedic
+              this.notedic_mixed = data.notedic_mixed
+              this.notedic_mel = data.notedic_mel
+              this.notedic_acc = data.notedic_acc
               this.sustain = data.sustain
+              this.songname = data.name
+              this.songkey = data.key
+
+              this.update_melacc_toggle()
               // Modify the sustain status to include the onset of every measure
               for (let bar=1; bar<4; bar++){
                 for (let i=0; i<this.sustain.length; i++){
@@ -367,6 +529,20 @@ export default {
       }
       
       setTimeout(() => {  this.player_play(); }, 16*250*60/this.bpm)
+      // Update cell highlighting
+      for (let i=this.t; i<this.t+4; i++){
+        this.highlight_cell("altered"+i, 16*250*60/this.bpm/1000)
+      }
+      const high_light_step = (time) => {
+        this.highlight_cell("time_altered"+time, 4*250*60/this.bpm/1000)
+        if (time % 4 == 3){
+          return
+        }
+        setTimeout(() => {
+          high_light_step(time+1)
+        }, 4*250*60/this.bpm);
+      }
+      high_light_step(this.t)
 
       // Clean up at song start
       if (this.t == 0){
@@ -419,7 +595,7 @@ export default {
       // Overlay and notemat
       let new_chd_mat = Array(36).fill(0)
       new_chd_mat[root] = 1
-      new_chd_mat[root+24] = 1
+      new_chd_mat[24] = 1
 
       let M3 = [0,4,7]
       let m3 = [0,3,7]
@@ -623,7 +799,7 @@ export default {
     // Place barlines / original player
     draw_barlines_original(){
       d3.selectAll(".barline_original").remove().exit()
-      let top_rect = document.getElementById("time1").getBoundingClientRect();
+      let top_rect = document.getElementById("time0").getBoundingClientRect();
       let bottom_rect = document.getElementById("original_prog0").getBoundingClientRect();
 
       let l1 = top_rect.left + window.pageXOffset || document.documentElement.scrollLeft
@@ -644,7 +820,7 @@ export default {
     draw_barlines_altered(){
       d3.selectAll(".barline_altered").remove().exit()
 
-      let top_rect = document.getElementById("time_altered1").getBoundingClientRect();
+      let top_rect = document.getElementById("time_altered0").getBoundingClientRect();
       let bottom_rect = document.getElementById("altered10").getBoundingClientRect();
 
       let l1 = top_rect.left + window.pageXOffset || document.documentElement.scrollLeft
@@ -663,53 +839,257 @@ export default {
         }
     },
     place_player_original(){
-      let top_rect = document.getElementById("time16").getBoundingClientRect();
+      let top_rect = document.getElementById("time15").getBoundingClientRect();
       let bottom_rect = document.getElementById("original_prog15").getBoundingClientRect();
 
       let l2 = top_rect.right + window.pageXOffset || document.documentElement.scrollLeft
       let t = top_rect.top + window.pageYOffset || document.documentElement.scrollTop
-      let b = bottom_rect.bottom + window.pageYOffset || document.documentElement.scrollTop
+      let b = bottom_rect.top + window.pageYOffset || document.documentElement.scrollTop
 
       d3.select("#original_player")
       .style("position","absolute")
       .style("left",l2+"px")
-      .style("top", (t+2*b)/3+"px")
+      .style("top", (t+2.5*b)/3.5+"px")
       .style("-webkit-transform","scale(0.75)")
       .raise()
     },
     place_barlines_and_player(){
       this.draw_barlines_original()
-      this.draw_barlines_altered(),
+      this.draw_barlines_altered()
       this.place_player_original()
+      this.place_melacc_toggle()
+    },
+
+    // Mel/Acc toggle
+    mel_on_click(){
+      this.mel = ! this.mel
+      if (! this.mel && ! this.acc){
+        this.acc = true
+      }
+      this.update_melacc_toggle()
+    },
+    acc_on_click(){
+      this.acc = ! this.acc
+      if (! this.acc && ! this.mel){
+        this.mel = true
+      }
+      this.update_melacc_toggle()
+    },
+    update_melacc_toggle(){
+      if (this.mel && this.acc){
+        this.notedic = this.notedic_mixed
+        this.original_noteseq = this.original_noteseq_mixed
+        this.original_noteseq_overlay = this.original_noteseq_mel
+      }
+      else if (this.mel){
+        this.notedic = this.notedic_mel
+        this.original_noteseq = this.original_noteseq_mel
+        this.original_noteseq_overlay = this.empty_noteseq
+      }
+      else{
+        this.notedic = this.notedic_acc
+        this.original_noteseq = this.original_noteseq_acc
+        this.original_noteseq_overlay = this.empty_noteseq
+      }
+    },
+    place_melacc_toggle(){
+      let top_rect = document.getElementById("time15").getBoundingClientRect();
+      let bottom_rect = document.getElementById("original_prog15").getBoundingClientRect();
+
+      let l1 = top_rect.left + window.pageXOffset || document.documentElement.scrollLeft
+      let l2 = top_rect.right + window.pageXOffset || document.documentElement.scrollLeft
+      let t = top_rect.top + window.pageYOffset || document.documentElement.scrollTop
+      let b = bottom_rect.top + window.pageYOffset || document.documentElement.scrollTop
+
+      d3.select("#melacc_toggle")
+      .style("position","absolute")
+      .style("left",l2+(l2-l1)/4+"px")
+      .style("top", (1.15*t+b)/2.15+"px")
+      .style("-webkit-transform","scale(0.6)")
+      .raise()
+    },
+
+    // Chord playback
+    play_chord(track, i){
+      player.stop()
+      let highlight_start = 0
+      let highlight_end = 16
+      if (track == 'original'){
+        player.start(this.chords_to_noteseq([this.original_chd_mat[i]], false))
+        for (let j=0; j<16; j++){
+          if (document.getElementById("original_prog"+j).innerHTML.replace(/\s/g,"") != '' && j > i){
+            highlight_end = j
+            break
+          }
+          if (document.getElementById("original_prog"+j).innerHTML.replace(/\s/g,"") != ''){
+            highlight_start = j
+          }
+        }
+        for (let j=highlight_start; j<highlight_end; j++){
+          this.highlight_cell("original_prog"+j, 0.5)
+        }
+      }
+      if (track == 'altered'){
+        for (let j=0; j<16; j++){
+          if (document.getElementById("altered"+j).innerHTML.replace(/\s/g,"") != '' && j > i){
+            break
+          }
+          if (document.getElementById("altered"+j).innerHTML.replace(/\s/g,"") != ''){
+            highlight_start = j
+          }
+        }
+        if (highlight_start < i - 3){return}
+        for (let j=highlight_start; j<highlight_start+4; j++){
+          this.highlight_cell("altered"+j, 0.5)
+        }
+        player.start(this.chords_to_noteseq([this.altered_chd_mat[i]], false))
+      }
+
+      
+    },
+
+    play_prog_original(){
+      player.stop()
+      player.start(this.chords_to_noteseq(this.original_chd_mat, false))
+      let i = 0
+      const high_light_step = () => {
+        if (i < 16){
+          this.highlight_cell("time"+i, this.prog_step_duration)
+          if (document.getElementById("original_prog"+i).innerHTML.replace(/\s/g,"") != ''){
+            let t = 1
+            for (let j=i+1; j<16; j++){
+              if (document.getElementById("original_prog"+j).innerHTML.replace(/\s/g,"") == ''){
+                t++
+              }
+              else{
+                break
+              }
+            }
+            for (let j=i; j<i+t; j++){
+              this.highlight_cell("original_prog"+j, t*this.prog_step_duration)
+            }
+          }
+          i++
+          setTimeout(() => {
+            high_light_step()
+          }, this.prog_step_duration*1000);
+        }
+      }
+      high_light_step()
+      
+    },
+
+    play_prog_altered(){
+      player.stop()
+      player.start(this.chords_to_noteseq(this.altered_chd_mat, false))
+      let i = 0
+      const high_light_step = () => {
+        if (i < 16){
+          if (i%4 == 0 && document.getElementById("altered"+i).innerHTML.replace(/\s/g,"") == ''){return}
+          this.highlight_cell("time_altered"+i, this.prog_step_duration)
+          if (document.getElementById("altered"+i).innerHTML.replace(/\s/g,"") != ''){
+            for (let j=i; j<i+4; j++){
+              this.highlight_cell("altered"+j, 4*this.prog_step_duration)
+            }
+          }
+          i++
+          setTimeout(() => {
+            high_light_step()
+          }, this.prog_step_duration*1000);
+        }
+      }
+      high_light_step()
+    },
+
+    // Chord/Time cell highlighting
+    highlight_cell(id, t){
+      document.getElementById(id).classList.add("cell_active")
+      setTimeout(() => {
+        document.getElementById(id).classList.remove("cell_active")
+      }, t*1000);
     }
   },
 
   mounted(){
-  this.get_data()
-  player.loadAllSamples().then(()=>{ 
-      this.loaded = true
-      this.altered_noteseq.notes = []
-  })
-  
-  let This = this
-  player.callbackObject = {
-      run: (note) => {This.canvas_update_note(note)},
-        stop: () => {return}
-      };
+    this.get_songdata()
+    this.get_data()
+    player.loadAllSamples().then(()=>{ 
+        this.loaded = true
+        this.altered_noteseq.notes = []
+    })
+    
+    let This = this
+    player.callbackObject = {
+        run: (note) => {This.canvas_update_note(note)},
+          stop: () => {return}
+        };
 
-  // Barlines and player positioning
-  window.onresize = this.place_barlines_and_player
-  
-  // Keyboard shortcuts
-  document.addEventListener('keydown', (event) => {
-    let key = event.key
-    if (['r','R'].includes(key)){
-      this.player_reset()
+    // Barlines and player positioning
+    window.onresize = this.place_barlines_and_player
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (event) => {
+      let key = event.key
+      if (['r','R'].includes(key)){
+        this.player_reset()
+      }
+      if (['n','N'].includes(key)){
+        this.get_data()
+      }
+    })
+
+    // Cell highlighting - original (copied form educational)
+    const mutationObserver_config = { childList: true, subtree: true, attributes:true };
+    let original_timer = document.getElementById("original_player").shadowRoot.querySelector(".current-time")
+    let original_controls = document.getElementById("original_player").shadowRoot.querySelector(".controls")
+
+    function original_cell_highlight(time_cell, prog_cell, step=1){
+        console.log(1)
+        if (time_cell){
+            time_cell.classList.add("time_cell_active")
+            setTimeout(() => {
+                if (time_cell.classList.contains("time_cell_active")){
+                    time_cell.classList.remove("time_cell_active")
+                }
+            }, step*1000);
+            if (! prog_cell.classList.contains("table_cell_active")){
+                prog_cell.classList.add("table_cell_active")
+                let lighted_cells = [prog_cell]
+                let timeout = step
+                let temp_cell = document.getElementById("original_prog"+(lighted_cells[lighted_cells.length-1].id.slice(13,15)*1+1))
+                
+                while (temp_cell && temp_cell.innerHTML.replace(/\s/g, '')==""){
+                    temp_cell.classList.add("table_cell_active")
+                    lighted_cells.push(temp_cell)
+                    temp_cell = document.getElementById("original_prog"+(lighted_cells[lighted_cells.length-1].id.slice(13,15)*1+1))
+                    timeout += step
+                }
+                setTimeout(() => {
+                    while (lighted_cells.length > 0){
+                        let cell = lighted_cells.pop()
+                        if (cell.classList.contains("table_cell_active")){
+                            cell.classList.remove("table_cell_active")
+                        }
+                    }
+                }, timeout*1000);
+            }
+        }
     }
-    if (['n','N'].includes(key)){
-      this.get_data()
-    }
-  })
+
+    let original_callback = function(mutationsList, observer) {
+        observer == observer
+        for(var mutation of mutationsList) {
+          mutation == mutation
+            if (original_controls.classList.contains("playing")){
+                let time_cell = document.getElementById("time"+(original_timer.innerHTML.slice(2,4)*1))
+                let prog_cell = document.getElementById("original_prog"+(original_timer.innerHTML.slice(2,4)*1))
+                original_cell_highlight(time_cell, prog_cell)
+            }
+        }
+    };
+
+    let original_observer = new MutationObserver(original_callback);
+    original_observer.observe(original_controls, mutationObserver_config);
 
   }
 
@@ -817,6 +1197,10 @@ canvas{
     top: -280px
 }
 
+#original_vis_overlay{
+  opacity: 0.85;
+}
+
 /* Bpm slider ////////////////////////////////////////////////////////////////////////////////// */
 #bpm_slider{
     position: relative;
@@ -855,6 +1239,46 @@ canvas{
 
 #slider_container{
     height: 50px;
+}
+
+/* hover dropdown menus //////////////////////////////////////////////////////////////////////////////////////*/
+@media only screen and (max-width: 991px) {
+    .navbar-hover .show > .dropdown-toggle::after{
+        transform: rotate(-90deg);
+    }
+}
+@media only screen and (min-width: 992px) {
+    .navbar-hover .collapse ul li{position:relative;}
+    .navbar-hover .collapse ul li:hover> ul{display:block}
+    .navbar-hover .collapse ul ul{position:absolute;top:100%;left:0;min-width:250px;display:none}
+    .navbar-hover .collapse ul ul ul{position:absolute;top:0;left:100%;min-width:250px;display:none}
+}
+
+#resample{
+    -webkit-user-select: none;         
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    user-select: none; 
+    padding-left: 10%;
+}
+
+#browse_samples{
+    -webkit-user-select: none;         
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    user-select: none; 
+}
+
+.dropdown{
+    -webkit-user-select: none;         
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    user-select: none; 
+}
+
+/* Cell highlighting //////////////////////////////////////////////////////////////// */
+.cell_active{
+  background-color: #80b8f5 !important
 }
 
 </style>

@@ -130,7 +130,7 @@ export default {
       else if (['¡','™','£','¢','∞','§','¶','•','ª','º','–','≠'].includes(key)){
           event.preventDefault()
           let idx = ['¡','™','£','¢','∞','§','¶','•','ª','º','–','≠'].indexOf(key)
-          this.root_on_click(idx, event)
+          this.root_on_middleclick(idx, event)
       }
     }
   },
