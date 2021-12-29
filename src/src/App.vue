@@ -146,9 +146,11 @@
       <tr>
         <div>
         <th id=play_prog_original class="prog_head" v-on:click="play_prog_altered">Altered</th>
-        <td v-for="i in 16" v-bind:key="i" v-bind:id="'altered'+(i-1)" class="table_cell" style="font-weight:normal;" v-on:click="play_chord('altered',i-1)">{{altered_chd_str[i-1]}}</td>
+        <td v-for="i in 16" v-bind:key="i" v-bind:id="'altered'+(i-1)" class="table_cell" style="font-weight:normal;" v-on:click="play_chord('altered',i-1)">
+          <span v-if="! hide_vis_input">{{altered_chd_str[i-1]}}</span>
+        </td>
+        <th class="table_tail" v-on:click="test_add">Add to test</th>
         </div>
-        <th v-on:click="play_prog_altered"></th>
     </tr>
     </tbody>
   </table> 
@@ -168,6 +170,30 @@
         <input type="checkbox" id="chord_overlay" v-bind:checked="chord_overlay" v-on:click="this.chord_on_click()"> <span> &nbsp; Chord overlay</span>
       </div>
     </div>
+
+    <br>
+    <div>
+    <button class="btn btn-light" v-on:click="test_clear" :disabled="this.test_chd_strs.length < 1 || playing">Clear Test</button><br>
+    <br>
+    <button class="btn btn-light" v-on:click="test_apply" :disabled="this.test_chd_strs.length < 1 || playing">Test</button><br>
+    <button class="btn btn-light" v-on:click="test_show_answer" :disabled="! hide_vis_input || playing">Show answer</button><br>
+    </div>
+    
+    <div v-for="i in this.test_chd_strs.length" :key="i">
+      <div v-if="i == this.test_idx + 1 && ! hide_vis_input" class="test_correct no_click">
+        <span v-for="j in 4" :key="j">
+          {{this.test_chd_strs[i-1][4*(j-1)]}}
+          <span v-if="j<4"> &nbsp;-&nbsp;</span>
+        </span>
+      </div>
+      <div v-else class="no_click">
+        <span v-for="j in 4" :key="j">
+          {{this.test_chd_strs[i-1][4*(j-1)]}}
+          <span v-if="j<4"> &nbsp;-&nbsp;</span>
+        </span>
+      </div>
+    </div>
+
   </div>
 
   <div class="col-3">
@@ -190,7 +216,7 @@
     </div>
 
     <!-- Interface UIs -->  
-    <div v-if="this.loaded">
+    <div v-if="this.loaded && ! this.hide_vis_input">
     <InterfaceFixed v-if="input_type == 'fixed'" v-on:update_current_chord="update_current_chord"/>
     <InterfaceMovable ref="dial" v-if="input_type == 'movable'" v-bind:interface_key="this.key" v-bind:roots="scales_major" v-on:update_current_chord="update_current_chord"/>
     </div>
@@ -281,10 +307,18 @@ export default {
       altered_chd_str: Array(16).fill(""),
       altered_chd_mat: Array(16).fill(Array(36).fill(0)),
 
+      // Stored song data (test mode)
+      chds: [],
+      test_chd_strs: [],
+      test_chds: [],
+      altered_chd_str_hide: [],
+      test_idx: -1,
+
       // Interfacing (outside)
       bpm: 60,
       playing: false,
       loaded: false,
+      hide_vis_input: false,
       input_type: "fixed",
       key: "C",
       
@@ -550,13 +584,15 @@ export default {
         this.altered_chd_str = Array(16).fill("")
         this.altered_chd_mat =  Array(16).fill(Array(36).fill(0))
         this.altered_noteseq.notes = []
+        this.altered_noteseqs = [0,0,0,0]
+        this.chds = []
       }
 
       // Clean up at window start
       if (this.t % this.STEP_SIZE == 0){
         this.chord_seq = []
       }
-
+      this.chds.push(this.current_chd)
       this.chord_seq.push(this.current_chd)
       let root = parseInt(this.current_chd.slice(0,-2))
       let chroma = this.current_chd.slice(-2)
@@ -592,8 +628,10 @@ export default {
 
 
       // Canvas and noteseq
-      this.altered_vis.noteSequence = this.altered_noteseq
-      this.altered_vis.redraw()
+      if (! this.hide_vis_input){
+        this.altered_vis.noteSequence = this.altered_noteseq
+        this.altered_vis.redraw()
+      }
 
       // Overlay and notemat
       let new_chd_mat = Array(36).fill(0)
@@ -752,7 +790,7 @@ export default {
         let chd = this.original_chd_mat[i];
         let root = chd.slice(0,12).indexOf(1);
         this.draw_overlay_bar(d3.select(".original_svg"), i, root, this.get_color(0));
-        if (this.altered_chd_mat[i].slice(0,12).indexOf(1) >= 0){
+        if (this.altered_chd_mat[i].slice(0,12).indexOf(1) >= 0 && ! this.hide_vis_input){
             this.draw_overlay_bar(d3.select(".swapped_svg"), i, this.altered_chd_mat[i].slice(0,12).indexOf(1), this.get_color(0));
         }
       }
@@ -765,7 +803,7 @@ export default {
           if (chd[12+j] == 1){
               this.draw_overlay_bar(d3.select(".original_svg"), i, j, this.get_color((j-root)%12));
           }
-          if (this.altered_chd_mat[i][12+j] == 1){
+          if (this.altered_chd_mat[i][12+j] == 1  && ! this.hide_vis_input){
               this.draw_overlay_bar(d3.select(".swapped_svg"), i, j, this.get_color((j-this.altered_chd_mat[i].slice(0,12).indexOf(1))%12));
           }
         }
@@ -1098,7 +1136,64 @@ export default {
 
     replay_all(){
       this. replay_bar(2, 4)
-    }
+    },
+
+    // Test mode
+    test_add(){
+      if (this.altered_noteseqs[3] == 0){
+        return
+      }
+      this.test_chd_strs.push(this.altered_chd_str)
+      this.test_chds.push(this.chds)
+    },
+
+    test_apply(){
+      if (this.playing || this.test_chd_strs.length == 0){
+        return
+      }
+      let idx = Math.floor(Math.random() * this.test_chd_strs.length)
+
+      // Hide things
+      this.hide_vis_input = true
+      this.altered_chd_str_hide = this.altered_chd_str.slice()
+      this.altered_vis.noteSequence = {notes: [{pitch: 30, start:0, end:8}], totalTime:16}
+      this.test_idx = idx
+
+      const step = (i) => {
+        this.update_current_chord(this.test_chds[idx][i], this.test_chd_strs[idx][i*4])
+        if (i == 0){
+            setTimeout(() => {
+            step(i + 1)
+          }, 15*250*60/this.bpm);
+        }
+        else if (i < 3){
+          setTimeout(() => {
+            step(i + 1)
+          }, 16*250*60/this.bpm);
+        }
+      }
+
+      step(0)
+    },
+
+    test_show_answer(){
+      if (! this.hide_vis_input){
+        return
+      }
+      this.hide_vis_input = false
+      this.altered_chd_str = this.altered_chd_str_hide.slice()
+      this.update_overlay()
+      this.altered_vis.noteSequence = this.altered_noteseq
+      this.altered_vis.redraw()
+    },
+    
+    test_clear(){
+      this.test_chd_strs = []
+      this.test_chds = []
+      this.altered_chd_str_hide = []
+      this.test_idx = -1
+      this.hide_vis_input = false
+    },
   },
 
   mounted(){
@@ -1249,6 +1344,14 @@ export default {
     width: 100px;
 }
 
+.table_tail{
+    -webkit-user-select: none;         
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    user-select: none; 
+    text-align: left;
+}
+
 .table_cell_active{
     background-color: #80b8f5 !important;
     animation-name: table_cell_active_ani;
@@ -1369,6 +1472,18 @@ canvas{
 /* Cell highlighting //////////////////////////////////////////////////////////////// */
 .cell_active{
   background-color: #80b8f5 !important
+}
+
+/* Test //////////////////////////////////*/
+.test_correct{
+  color: #0c9600
+}
+
+.no_click{
+    -webkit-user-select: none;         
+    -moz-user-select: none; 
+    -ms-user-select: none; 
+    user-select: none; 
 }
 
 </style>
