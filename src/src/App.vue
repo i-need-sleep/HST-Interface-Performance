@@ -37,7 +37,11 @@
         data-content="
         Playback: <br> 
         <ul>
-          <li>r: reset</li>
+          <li>e: reset player</li>
+          <li>r: replay</li>
+          <li>t: test</li>
+          <li>a: a to test</li>
+          <li>s: show answer</li>
           <li>n: new sample</li>
         </ul>
         Input-Fixed: <br> 
@@ -149,7 +153,7 @@
         <td v-for="i in 16" v-bind:key="i" v-bind:id="'altered'+(i-1)" class="table_cell" style="font-weight:normal;" v-on:click="play_chord('altered',i-1)">
           <span v-if="! hide_vis_input">{{altered_chd_str[i-1]}}</span>
         </td>
-        <th class="table_tail" v-on:click="test_add">Add to test</th>
+        <th><span class="table_tail" v-on:click="test_add" v-if="! this.playing">Add to test</span></th>
         </div>
     </tr>
     </tbody>
@@ -513,6 +517,7 @@ export default {
               this.altered_vis = new mm.PianoRollCanvasVisualizer({notes: [{pitch: 30, start:0, end:8}], totalTime:16}, document.getElementById('altered_canvas'), this.cfg)
               this.update_overlay()
 
+              this.test_show_answer()
               this.player_reset()
               this.place_barlines_and_player()
               setTimeout(() => {  this.place_barlines_and_player(); }, 1000)
@@ -547,6 +552,7 @@ export default {
 
     player_reset(){
       this.playing = false
+      this.loaded = true
       this.t = 0
       this.altered_noteseq.notes = []
       this.altered_noteseqs = [0,0,0,0]
@@ -971,15 +977,7 @@ export default {
         }
       }
       if (track == 'altered'){
-        for (let j=0; j<16; j++){
-          if (document.getElementById("altered"+j).innerHTML.replace(/\s/g,"") != '' && j > i){
-            break
-          }
-          if (document.getElementById("altered"+j).innerHTML.replace(/\s/g,"") != ''){
-            highlight_start = j
-          }
-        }
-        if (highlight_start < i - 3){return}
+        highlight_start = i - i%4
         for (let j=highlight_start; j<highlight_start+4; j++){
           this.highlight_cell("altered"+j, 0.5)
         }
@@ -1026,9 +1024,9 @@ export default {
       let i = 0
       const high_light_step = () => {
         if (i < 16){
-          if (i%4 == 0 && document.getElementById("altered"+i).innerHTML.replace(/\s/g,"") == ''){return}
+          if (i%4 == 0 && this.altered_chd_str[i] == ''){return}
           this.highlight_cell("time_altered"+i, this.prog_step_duration)
-          if (document.getElementById("altered"+i).innerHTML.replace(/\s/g,"") != ''){
+          if (this.altered_chd_str[i] != ''){
             for (let j=i; j<i+4; j++){
               this.highlight_cell("altered"+j, 4*this.prog_step_duration)
             }
@@ -1155,7 +1153,7 @@ export default {
 
       // Hide things
       this.hide_vis_input = true
-      this.altered_chd_str_hide = this.altered_chd_str.slice()
+      this.altered_chd_str_hide = this.test_chd_strs[idx].slice()
       this.altered_vis.noteSequence = {notes: [{pitch: 30, start:0, end:8}], totalTime:16}
       this.test_idx = idx
 
@@ -1173,11 +1171,12 @@ export default {
         }
       }
 
+      this.player_reset()
       step(0)
     },
 
     test_show_answer(){
-      if (! this.hide_vis_input){
+      if (! this.hide_vis_input || this.playing){
         return
       }
       this.hide_vis_input = false
@@ -1216,11 +1215,23 @@ export default {
     // Keyboard shortcuts
     document.addEventListener('keydown', (event) => {
       let key = event.key
-      if (['r','R'].includes(key)){
+      if (['e','E'].includes(key)){
         this.player_reset()
       }
       if (['n','N'].includes(key)){
         this.get_data()
+      }
+      if (['t','T'].includes(key)){
+        this.test_apply()
+      }
+      if (['s','S'].includes(key)){
+        this.test_show_answer()
+      }
+      if (['a','A'].includes(key)){
+        this.test_add()
+      }
+      if (['r','R'].includes(key)){
+        this.replay_all()
       }
     })
 
