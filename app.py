@@ -48,7 +48,19 @@ def get_sample(sample_folder):
             key = jsonData['key'][:-1]
             key = key.replace(':','')
 
-    return original_midi_path_mixed, original_midi_path_mel, original_midi_path_acc, notedic, notedic_mel, notedic_acc, chord, sustain, key, name
+    # Get horizontal and vertical densities
+    onset_dict = {}
+    for val_ in notedic_acc.values():
+        for notes in val_.values():
+            for note in notes:
+                if note[0] not in onset_dict.keys():
+                    onset_dict[note[0]] = 1
+            hd = len(onset_dict)
+            vd = len(notes) / hd
+            break
+        break
+
+    return original_midi_path_mixed, original_midi_path_mel, original_midi_path_acc, notedic, notedic_mel, notedic_acc, chord, sustain, key, name, hd, vd
 
 def chd_to_str(c_mat):
     out = []
@@ -162,6 +174,32 @@ def getSongData():
 
 songData = getSongData()
 
+def get_data_from_folder(folder):
+    original_midi_path_mixed, original_midi_path_mel, original_midi_path_acc, notedic, notedic_mel, notedic_acc, chord, sustain, key, name, hd, vd = get_sample(folder)
+
+    chord_str = chd_to_str(chord)
+    chord_deg = chd_to_deg(chord, key)
+    for idx, chd_str in enumerate(chord_str):
+        if chord_deg[idx] != '':
+            chord_str[idx] += " ({})".format(chord_deg[idx])
+
+    out =  {'songID': folder,
+            'original_chd_str': chord_str,
+            'original_chd_mat': chord.tolist(),
+            'original_noteseq_mixed': midi_to_noteseq(original_midi_path_mixed),
+            'original_noteseq_mel': midi_to_noteseq(original_midi_path_mel),
+            'original_noteseq_acc': midi_to_noteseq(original_midi_path_acc),
+            'notedic_mixed': notedic,
+            'notedic_mel': notedic_mel,
+            'notedic_acc': notedic_acc,
+            'sustain': sustain.tolist(),
+            'key': key,
+            'name': name,
+            'hd': hd,
+            'vd': vd}
+    return out
+
+
 # The Main Thing ##################################################################################################################
 @app.route('/', methods=['GET'])
 def index():
@@ -191,26 +229,19 @@ def get_data():
         sample_folder = random.choice(SAMPLES)
     else:
         sample_folder = songID
-    original_midi_path_mixed, original_midi_path_mel, original_midi_path_acc, notedic, notedic_mel, notedic_acc, chord, sustain, key, name = get_sample(sample_folder)
+    
+    out = get_data_from_folder(sample_folder)
+    return json.dumps(out)
 
-    chord_str = chd_to_str(chord)
-    chord_deg = chd_to_deg(chord, key)
-    for idx, chd_str in enumerate(chord_str):
-        if chord_deg[idx] != '':
-            chord_str[idx] += " ({})".format(chord_deg[idx])
-
-    out =  {'songID': sample_folder,
-            'original_chd_str': chord_str,
-            'original_chd_mat': chord.tolist(),
-            'original_noteseq_mixed': midi_to_noteseq(original_midi_path_mixed),
-            'original_noteseq_mel': midi_to_noteseq(original_midi_path_mel),
-            'original_noteseq_acc': midi_to_noteseq(original_midi_path_acc),
-            'notedic_mixed': notedic,
-            'notedic_mel': notedic_mel,
-            'notedic_acc': notedic_acc,
-            'sustain': sustain.tolist(),
-            'key': key,
-            'name': name}
+@app.route('/get_data_all', methods=['GET'])
+def get_data_all():
+    out = {'songID': 10}
+    for sample in SAMPLES:
+        out[sample] = get_data_from_folder(sample)
+    
+    # Load AccoMontage edge weights
+    with open('static/edge_weight_reduced.json', 'r') as f:
+        out['edge_weights'] = json.load(f)
     return json.dumps(out)
 
 if __name__ == '__main__':
