@@ -218,8 +218,8 @@ def serve_css(path):
     return app.send_static_file('css/'+path)
 
 @app.route('/accFilter_icons/<path>')
-def serve_js(path):
-    return app.send_static_file('js/'+path)
+def serve_accFilter_icons(path):
+    return app.send_static_file('accFilter_icons/'+path)
 
 @app.route('/get_songdata', methods=['GET'])
 def get_songdata():
